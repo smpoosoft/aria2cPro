@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aria2c 命令生成器 - AI 模型下载助手</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 { margin-top: 0; color: var(--primary-color); border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .field { display: flex; flex-direction: column; }
+        .field.full { grid-column: span 2; }
+
+        label { font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; }
+
+        input, select {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus { border-color: var(--primary-color); }
+
+        .output-section {
+            margin-top: 30px;
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .output-header {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #command-display {
+            color: #f1f5f9;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            word-break: break-all;
+            cursor: pointer;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        #command-display:hover { background: rgba(255,255,255,0.1); }
+
+        .copy-hint { color: #3b82f6; font-size: 0.75rem; cursor: pointer; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Aria2c 下载命令生成器</h2>
+
+    <div class="grid">
+        <div class="field full">
+            <label>模型下载 URL</label>
+            <input type="text" id="url" placeholder="粘贴 HuggingFace 或镜像站的下载链接" value="https://hf-mirror.com/Qwen/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q5_K_M.gguf?download=true">
+        </div>
+
+        <div class="field">
+            <label>保存目录 (-d)</label>
+            <input type="text" id="dir" value="/smpoo_code/ai/models/">
+        </div>
+
+        <div class="field">
+            <label>保存文件名 (-o)</label>
+            <input type="text" id="out" value="Qwen3-8B-Q5_K_M.gguf">
+        </div>
+
+        <div class="field">
+            <label>最大并发线程 (-s)</label>
+            <input type="number" id="split" value="16" min="1" max="128">
+        </div>
+
+        <div class="field">
+            <label>单服务器连接数 (-x)</label>
+            <input type="number" id="conn" value="16" min="1" max="16">
+        </div>
+
+        <div class="field">
+            <label>磁盘预分配 (--file-allocation)</label>
+            <select id="alloc">
+                <option value="falloc">falloc (推荐 Linux)</option>
+                <option value="prealloc">prealloc</option>
+                <option value="trunc">trunc</option>
+                <option value="none">none</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>断点续传 (-c)</label>
+            <select id="continue">
+                <option value="true">开启 (推荐)</option>
+                <option value="false">关闭</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="output-section">
+        <div class="output-header">
+            <span>生成的 Shell 命令</span>
+            <span class="copy-hint" id="copy-btn">点击命令区域复制</span>
+        </div>
+        <div id="command-display"></div>
+    </div>
+</div>
+
+<div id="toast" class="toast">已复制到剪贴板！</div>
+
+<script type="module">
+    const inputs = ['url', 'dir', 'out', 'split', 'conn', 'alloc', 'continue'];
+    const display = document.getElementById('command-display');
+    const toast = document.getElementById('toast');
+
+    function generateCommand() {
+        const val = (id) => document.getElementById(id).value;
+
+        let cmd = `aria2c`;
+
+        if (val('continue') === 'true') cmd += ` -c`;
+        cmd += ` -x ${val('conn')}`;
+        cmd += ` -s ${val('split')}`;
+        cmd += ` -k 1M`;
+        cmd += ` --file-allocation=${val('alloc')}`;
+        cmd += ` -d ${val('dir')}`;
+        cmd += ` -o ${val('out')}`;
+        cmd += ` "${val('url')}"`;
+
+        display.textContent = cmd;
+    }
+
+    // 监听所有输入组件的变化
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', generateCommand);
+    });
+
+    // 复制功能
+    display.addEventListener('click', () => {
+        const text = display.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        });
+    });
+
+    // 初始化生成一次
+    generateCommand();
+</script>
+
+</body>
+</html>
