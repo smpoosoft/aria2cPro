@@ -101,9 +101,11 @@ git_add_commit() {
     return 0
 }
 
-# 修复：处理read的返回值，避免污染git命令
+# 修复关键问题：版本选择函数只在需要时执行一次
 handle_version_tag() {
     local current_version="$1"
+    local new_version=""
+
     showInfo "当前版本: $current_version"
 
     echo ""
@@ -112,60 +114,63 @@ handle_version_tag() {
     showInfo "2). 次要版本号（Minor）"
     showInfo "3). 主版本号（Major）"
     showInfo "4). 不发布版本号"
-    echo -n "请选择 (1-4, 直接回车选择4): "
 
-    # 关键修复：使用-n1只读取一个字符，并且不显示提示
-    read -n1 -r version_choice
-    echo ""  # 换行，因为-n1不会自动换行
+    while true; do
+        echo -n "请选择 (1-4, 直接回车选择4): "
+        read -r version_choice
 
-    # 处理空输入（直接回车）
-    if [[ -z "$version_choice" ]]; then
-        version_choice=4
-    fi
+        # 处理空输入（默认选择4）
+        if [[ -z "$version_choice" ]]; then
+            showInfo "跳过版本标签创建"
+            echo ""  # 返回空字符串
+            return 0
+        fi
 
-    # 验证输入有效性
-    if ! [[ "$version_choice" =~ ^[1-4]$ ]]; then
-        showErr "无效的选择: '$version_choice'，请选择1-4"
-        echo ""  # 返回空字符串
-        return 1
-    fi
+        # 验证输入有效性
+        if [[ "$version_choice" =~ ^[1-4]$ ]]; then
+            break
+        else
+            showErr "无效的选择: '$version_choice'，请选择1-4"
+        fi
+    done
 
     case "$version_choice" in
-        1|2|3)
-            local new_version
-            if new_version=$(increment_version "$current_version" "$version_choice"); then
-                showInfo "新版本号: $new_version"
+        4)
+            showInfo "跳过版本标签创建"
+            echo ""  # 返回空字符串
+            return 0
+            ;;
+        *)
+            # 处理版本递增
+            if ! new_version=$(increment_version "$current_version" "$version_choice"); then
+                echo ""  # 返回空字符串表示失败
+                return 1
+            fi
 
-                # 获取标签说明
-                local tag_message="Release $new_version"
-                echo -n "请输入标签说明 (直接回车使用默认说明): "
-                read -r custom_message
+            showInfo "新版本号: $new_version"
 
-                if [[ -n "$custom_message" ]]; then
-                    tag_message="$custom_message"
-                fi
+            # 获取标签说明
+            local tag_message="Release $new_version"
+            echo -n "请输入标签说明 (直接回车使用默认说明): "
+            read -r custom_message
 
-                showInfo "创建标签 $new_version..."
-                if git tag -a "$new_version" -m "$tag_message"; then
-                    save_version "$new_version"
-                    showSucc "标签创建成功: $new_version"
-                    echo "$new_version"  # 返回新版本号
-                else
-                    showErr "标签创建失败"
-                    echo ""  # 返回空字符串表示失败
-                    return 1
-                fi
+            if [[ -n "$custom_message" ]]; then
+                tag_message="$custom_message"
+            fi
+
+            showInfo "创建标签 $new_version..."
+            if git tag -a "$new_version" -m "$tag_message"; then
+                save_version "$new_version"
+                showSucc "标签创建成功: $new_version"
+                echo "$new_version"  # 返回新版本号
+                return 0
             else
+                showErr "标签创建失败"
                 echo ""  # 返回空字符串表示失败
                 return 1
             fi
             ;;
-        4)
-            showInfo "跳过版本标签创建"
-            echo ""  # 关键修复：必须返回空字符串
-            ;;
     esac
-    return 0
 }
 
 git_push() {
@@ -175,7 +180,7 @@ git_push() {
     if git push -u origin main; then
         showSucc "代码推送成功"
 
-        # 关键修复：只有在有有效版本号时才推送标签
+        # 只有在有有效版本号时才推送标签
         if [[ -n "$new_version" ]] && [[ "$new_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             showInfo "推送版本标签: $new_version"
             if git push origin "$new_version"; then
@@ -195,18 +200,19 @@ git_push() {
 }
 
 # =============================================
-# 主函数
+# 主函数 - 修复执行顺序问题
 # =============================================
 
 main() {
     clear
     showInfo "开始Git推送流程..."
 
+    # 1. 检查Git状态
     if ! check_git_status; then
         return 1
     fi
 
-    # 获取提交信息
+    # 2. 获取提交信息
     echo ""
     showInfo "请输入提交说明:"
     read -r commit_message
@@ -216,17 +222,21 @@ main() {
         return 1
     fi
 
-    # 执行Git添加和提交
+    # 3. 添加并提交
     if ! git_add_commit "$commit_message"; then
         return 1
     fi
 
-    # 处理版本标签
-    local new_version
+    # 4. 询问版本标签（必须在推送之前！）
+    echo ""
+    showInfo "=== 版本标签设置 ==="
     local current_version=$(read_version)
+    local new_version=""
+
     if new_version=$(handle_version_tag "$current_version"); then
-        # 注意：handle_version_tag在用户选择4时返回空字符串
+        # 5. 推送代码和标签
         if git_push "$new_version"; then
+            echo ""
             showSucc "Git推送流程完成！"
             if [[ -n "$new_version" ]]; then
                 showInfo "最终版本: $new_version"
@@ -235,7 +245,7 @@ main() {
             return 1
         fi
     else
-        # handle_version_tag执行失败
+        # 版本选择失败
         return 1
     fi
 }
@@ -252,3 +262,6 @@ fi
 
 # 执行主函数
 main "$@"
+
+# 脚本结束，不会有任何额外的交互提示
+exit $?
