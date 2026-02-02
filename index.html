@@ -1,148 +1,83 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aria2c 命令生成器 - AI 模型下载助手</title>
+    <title>Aria2c Pro 命令生成器</title>
     <style>
         :root {
-            --primary-color: #2563eb;
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-color: #1e293b;
-            --border-color: #e2e8f0;
+            --primary: #2563eb; --bg: #f1f5f9; --card: #ffffff;
+            --text: #0f172a; --desc: #64748b; --border: #e2e8f0;
         }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 2rem; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 900px; background: var(--card); padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-        }
+        .form-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+        .full-width { grid-column: span 2; }
+        .field { display: flex; flex-direction: column; gap: 0.5rem; position: relative; }
+        label { font-weight: 600; font-size: 0.9rem; }
 
-        .container {
-            width: 100%;
-            max-width: 800px;
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+        /* 输入框组合体 */
+        .input-group { display: flex; gap: 2px; }
+        input, select { flex: 1; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 0.5rem; font-size: 1rem; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--primary); }
 
-        h2 { margin-top: 0; color: var(--primary-color); border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; }
+        /* 功能按钮 */
+        .btn { padding: 0.75rem 1rem; background: var(--bg); border: 1.5px solid var(--border); border-radius: 0.5rem; cursor: pointer; font-size: 0.9rem; white-space: nowrap; transition: 0.2s; }
+        .btn:hover { background: var(--border); }
+        .clear-btn { position: absolute; right: 0.75rem; top: 2.2rem; background: none; border: none; cursor: pointer; color: var(--desc); font-size: 1.2rem; padding: 0; }
 
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
+        /* 磁盘预分配 - 独占一行且卡片化 */
+        .allocation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .alloc-card { border: 1.5px solid var(--border); padding: 1rem; border-radius: 0.5rem; cursor: pointer; transition: 0.2s; }
+        .alloc-card:hover { border-color: var(--primary); background: #eff6ff; }
+        .alloc-card.active { border-color: var(--primary); background: #dbeafe; box-shadow: 0 0 0 2px var(--primary); }
+        .alloc-name { font-weight: 700; color: var(--primary); margin-bottom: 0.25rem; }
+        .alloc-desc { font-size: 0.8rem; color: var(--desc); line-height: 1.4; word-wrap: break-word; }
 
-        .field { display: flex; flex-direction: column; }
-        .field.full { grid-column: span 2; }
+        /* 输出区域 */
+        .output-box { background: #1e293b; color: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; position: relative; margin-top: 2rem; }
+        .output-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 1rem; display: flex; justify-content: space-between; }
+        #final-cmd { font-family: ui-monospace, monospace; word-break: break-all; font-size: 1rem; line-height: 1.5; cursor: pointer; color: #38bdf8; }
+        .copy-success { position: fixed; top: 1rem; right: 1rem; background: #10b981; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; display: none; animation: slideIn 0.3s ease; }
 
-        label { font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; }
-
-        input, select {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input:focus { border-color: var(--primary-color); }
-
-        .output-section {
-            margin-top: 30px;
-            background: #1e293b;
-            padding: 20px;
-            border-radius: 8px;
-            position: relative;
-        }
-
-        .output-header {
-            color: #94a3b8;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        #command-display {
-            color: #f1f5f9;
-            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-            word-break: break-all;
-            cursor: pointer;
-            padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-
-        #command-display:hover { background: rgba(255,255,255,0.1); }
-
-        .copy-hint { color: #3b82f6; font-size: 0.75rem; cursor: pointer; }
-
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #10b981;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            display: none;
-        }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Aria2c 下载命令生成器</h2>
+    <h1><span style="font-size: 1.8rem;">📥</span> Aria2c 命令生成助手</h1>
 
-    <div class="grid">
-        <div class="field full">
-            <label>模型下载 URL</label>
-            <input type="text" id="url" placeholder="粘贴 HuggingFace 或镜像站的下载链接" value="https://hf-mirror.com/Qwen/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q5_K_M.gguf?download=true">
+    <div class="form-section">
+        <div class="field full-width">
+            <label>模型下载 URL (点击空白处粘贴)</label>
+            <div class="input-group">
+                <input type="text" id="url" placeholder="https://..." autocomplete="off">
+                <button class="clear-btn" id="clear-url" title="清空">✕</button>
+            </div>
         </div>
 
         <div class="field">
             <label>保存目录 (-d)</label>
-            <input type="text" id="dir" value="/smpoo_code/ai/models/">
+            <div class="input-group">
+                <input type="text" id="dir" placeholder="/path/to/save">
+                <button class="btn" id="pick-dir">📁 选择文件夹</button>
+            </div>
         </div>
 
         <div class="field">
             <label>保存文件名 (-o)</label>
-            <input type="text" id="out" value="Qwen3-8B-Q5_K_M.gguf">
+            <input type="text" id="out" placeholder="model.gguf">
         </div>
 
         <div class="field">
-            <label>最大并发线程 (-s)</label>
-            <input type="number" id="split" value="16" min="1" max="128">
-        </div>
-
-        <div class="field">
-            <label>单服务器连接数 (-x)</label>
-            <input type="number" id="conn" value="16" min="1" max="16">
-        </div>
-
-        <div class="field">
-            <label>磁盘预分配 (--file-allocation)</label>
-            <select id="alloc">
-                <option value="falloc">falloc (推荐 Linux)</option>
-                <option value="prealloc">prealloc</option>
-                <option value="trunc">trunc</option>
-                <option value="none">none</option>
-            </select>
+            <label>线程数 / 连接数 (-s / -x)</label>
+            <div class="input-group">
+                <input type="number" id="split" value="16" title="线程数">
+                <input type="number" id="conn" value="16" title="连接数">
+            </div>
         </div>
 
         <div class="field">
@@ -152,57 +87,121 @@
                 <option value="false">关闭</option>
             </select>
         </div>
+
+        <div class="field full-width">
+            <label>磁盘预分配策略 (--file-allocation)</label>
+            <div class="allocation-grid" id="alloc-container">
+                <div class="alloc-card active" data-value="falloc">
+                    <div class="alloc-name">falloc</div>
+                    <div class="alloc-desc">现代 Linux (ext4/xfs) 推荐。瞬间分配海量空间，不占额外 IO。</div>
+                </div>
+                <div class="alloc-card" data-value="prealloc">
+                    <div class="alloc-name">prealloc</div>
+                    <div class="alloc-desc">传统方式。在开始前预写零填充，文件大时耗时较久。</div>
+                </div>
+                <div class="alloc-card" data-value="trunc">
+                    <div class="alloc-name">trunc</div>
+                    <div class="alloc-desc">利用 ftruncate 指令。极速，但部分旧文件系统支持有限。</div>
+                </div>
+                <div class="alloc-card" data-value="none">
+                    <div class="alloc-name">none</div>
+                    <div class="alloc-desc">不预分配。边下边写，可能导致严重的磁盘碎片。</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="output-section">
-        <div class="output-header">
-            <span>生成的 Shell 命令</span>
-            <span class="copy-hint" id="copy-btn">点击命令区域复制</span>
-        </div>
-        <div id="command-display"></div>
+    <div class="output-box">
+        <div class="output-label">生成的终端命令 <span>点击下方代码直接复制</span></div>
+        <div id="final-cmd">aria2c ...</div>
     </div>
 </div>
 
-<div id="toast" class="toast">已复制到剪贴板！</div>
+<div class="copy-success" id="toast">✅ 已复制到剪贴板</div>
 
 <script type="module">
-    const inputs = ['url', 'dir', 'out', 'split', 'conn', 'alloc', 'continue'];
-    const display = document.getElementById('command-display');
-    const toast = document.getElementById('toast');
+    const state = {
+        url: '', dir: '', out: '', split: 16, conn: 16,
+        alloc: 'falloc', continue: 'true'
+    };
 
-    function generateCommand() {
-        const val = (id) => document.getElementById(id).value;
+    const elements = {
+        url: document.getElementById('url'),
+        dir: document.getElementById('dir'),
+        out: document.getElementById('out'),
+        split: document.getElementById('split'),
+        conn: document.getElementById('conn'),
+        cont: document.getElementById('continue'),
+        cmd: document.getElementById('final-cmd'),
+        toast: document.getElementById('toast'),
+        cards: document.querySelectorAll('.alloc-card')
+    };
 
-        let cmd = `aria2c`;
+    // 1. 自动粘贴 & 清空逻辑
+    elements.url.addEventListener('click', async () => {
+        if (!elements.url.value) {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text.startsWith('http')) {
+                    elements.url.value = text;
+                    update();
+                }
+            } catch (err) { console.warn('粘贴权限被拒绝'); }
+        }
+    });
 
-        if (val('continue') === 'true') cmd += ` -c`;
-        cmd += ` -x ${val('conn')}`;
-        cmd += ` -s ${val('split')}`;
-        cmd += ` -k 1M`;
-        cmd += ` --file-allocation=${val('alloc')}`;
-        cmd += ` -d ${val('dir')}`;
-        cmd += ` -o ${val('out')}`;
-        cmd += ` "${val('url')}"`;
+    document.getElementById('clear-url').onclick = () => { elements.url.value = ''; update(); };
 
-        display.textContent = cmd;
+    // 2. 文件夹选择 API (2026 Native Support)
+    document.getElementById('pick-dir').onclick = async () => {
+        try {
+            const handle = await window.showDirectoryPicker();
+            // 注意：由于安全限制，Web 环境通常只能拿到目录名，
+            // 建议 NUC 用户根据实际挂载路径微调，这里演示获取名称。
+            elements.dir.value = `/smpoo_code/ai/models/${handle.name}`;
+            update();
+        } catch (err) { console.log('用户取消选择'); }
+    };
+
+    // 3. 磁盘预分配卡片切换
+    elements.cards.forEach(card => {
+        card.onclick = () => {
+            elements.cards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            state.alloc = card.dataset.value;
+            update();
+        };
+    });
+
+    // 4. 命令生成核心
+    function update() {
+        const url = elements.url.value.trim();
+        const dir = elements.dir.value.trim() || '/smpoo_code/ai/models/';
+        const out = elements.out.value.trim();
+        const s = elements.split.value;
+        const x = elements.conn.value;
+        const c = elements.cont.value === 'true' ? ' -c' : '';
+
+        let base = `aria2c${c} -x ${x} -s ${s} -k 1M --file-allocation=${state.alloc}`;
+        if (dir) base += ` -d "${dir}"`;
+        if (out) base += ` -o "${out}"`;
+        base += ` "${url || '[URL]'}"`;
+
+        elements.cmd.textContent = base;
     }
 
-    // 监听所有输入组件的变化
-    inputs.forEach(id => {
-        document.getElementById(id).addEventListener('input', generateCommand);
-    });
+    // 5. 点击复制
+    elements.cmd.onclick = () => {
+        navigator.clipboard.writeText(elements.cmd.textContent);
+        elements.toast.style.display = 'block';
+        setTimeout(() => elements.toast.style.display = 'none', 2000);
+    };
 
-    // 复制功能
-    display.addEventListener('click', () => {
-        const text = display.textContent;
-        navigator.clipboard.writeText(text).then(() => {
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 2000);
-        });
-    });
+    // 绑定普通事件
+    [elements.url, elements.dir, elements.out, elements.split, elements.conn, elements.cont]
+        .forEach(el => el.oninput = update);
 
-    // 初始化生成一次
-    generateCommand();
+    update(); // 初始化
 </script>
 
 </body>
