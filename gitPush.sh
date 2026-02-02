@@ -1,21 +1,7 @@
 #!/bin/bash
 
 # =============================================
-# Shell脚本规范说明
-# =============================================
-#
-# 脚本结构遵循标准规范：
-# 1. Shebang声明
-# 2. 配置变量与常量
-# 3. 函数定义（包含详细注释）
-# 4. 主执行逻辑
-# 5. 脚本入口调用
-#
-# 遵循Google Shell Style Guide规范[1,2](@ref)
-# =============================================
-
-# =============================================
-# 颜色定义函数（必须在最前，供后续函数使用）
+# 颜色定义函数
 # =============================================
 
 RED='\033[0;31m'
@@ -115,31 +101,42 @@ git_add_commit() {
     return 0
 }
 
+# 修复：处理read的返回值，避免污染git命令
 handle_version_tag() {
-    local current_version
-	current_version=$(read_version)
+    local current_version="$1"
     showInfo "当前版本: $current_version"
 
+    echo ""
     showInfo "选择版本策略："
     showInfo "1). 编译号（Patch）"
     showInfo "2). 次要版本号（Minor）"
     showInfo "3). 主版本号（Major）"
     showInfo "4). 不发布版本号"
-
     echo -n "请选择 (1-4, 直接回车选择4): "
-    read -r version_choice
 
+    # 关键修复：使用-n1只读取一个字符，并且不显示提示
+    read -n1 -r version_choice
+    echo ""  # 换行，因为-n1不会自动换行
+
+    # 处理空输入（直接回车）
     if [[ -z "$version_choice" ]]; then
         version_choice=4
+    fi
+
+    # 验证输入有效性
+    if ! [[ "$version_choice" =~ ^[1-4]$ ]]; then
+        showErr "无效的选择: '$version_choice'，请选择1-4"
+        echo ""  # 返回空字符串
+        return 1
     fi
 
     case "$version_choice" in
         1|2|3)
             local new_version
-			new_version=$(increment_version "$current_version" "$version_choice")
-            if [[ $? -eq 0 ]]; then
+            if new_version=$(increment_version "$current_version" "$version_choice"); then
                 showInfo "新版本号: $new_version"
 
+                # 获取标签说明
                 local tag_message="Release $new_version"
                 echo -n "请输入标签说明 (直接回车使用默认说明): "
                 read -r custom_message
@@ -152,22 +149,20 @@ handle_version_tag() {
                 if git tag -a "$new_version" -m "$tag_message"; then
                     save_version "$new_version"
                     showSucc "标签创建成功: $new_version"
-                    echo "$new_version"
+                    echo "$new_version"  # 返回新版本号
                 else
                     showErr "标签创建失败"
+                    echo ""  # 返回空字符串表示失败
                     return 1
                 fi
             else
+                echo ""  # 返回空字符串表示失败
                 return 1
             fi
             ;;
         4)
             showInfo "跳过版本标签创建"
-            echo ""
-            ;;
-        *)
-            showErr "无效的选择"
-            return 1
+            echo ""  # 关键修复：必须返回空字符串
             ;;
     esac
     return 0
@@ -180,14 +175,17 @@ git_push() {
     if git push -u origin main; then
         showSucc "代码推送成功"
 
-        if [[ -n "$new_version" ]]; then
-            showInfo "推送版本标签..."
+        # 关键修复：只有在有有效版本号时才推送标签
+        if [[ -n "$new_version" ]] && [[ "$new_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            showInfo "推送版本标签: $new_version"
             if git push origin "$new_version"; then
                 showSucc "标签推送成功: $new_version"
             else
                 showErr "标签推送失败"
                 return 1
             fi
+        else
+            showInfo "未创建标签，跳过标签推送"
         fi
     else
         showErr "代码推送失败"
@@ -197,17 +195,19 @@ git_push() {
 }
 
 # =============================================
-# 主函数（必须定义在函数调用之前）
+# 主函数
 # =============================================
 
 main() {
-	clear
+    clear
     showInfo "开始Git推送流程..."
 
     if ! check_git_status; then
         return 1
     fi
 
+    # 获取提交信息
+    echo ""
     showInfo "请输入提交说明:"
     read -r commit_message
 
@@ -216,12 +216,16 @@ main() {
         return 1
     fi
 
+    # 执行Git添加和提交
     if ! git_add_commit "$commit_message"; then
         return 1
     fi
 
+    # 处理版本标签
     local new_version
-    if new_version=$(handle_version_tag); then
+    local current_version=$(read_version)
+    if new_version=$(handle_version_tag "$current_version"); then
+        # 注意：handle_version_tag在用户选择4时返回空字符串
         if git_push "$new_version"; then
             showSucc "Git推送流程完成！"
             if [[ -n "$new_version" ]]; then
@@ -231,12 +235,13 @@ main() {
             return 1
         fi
     else
+        # handle_version_tag执行失败
         return 1
     fi
 }
 
 # =============================================
-# 脚本执行入口（必须放在文件末尾）
+# 脚本执行入口
 # =============================================
 
 # 检查是否在Git仓库中
@@ -245,5 +250,5 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi
 
-# 执行主函数[2,4](@ref)
+# 执行主函数
 main "$@"
