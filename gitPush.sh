@@ -101,7 +101,7 @@ git_add_commit() {
     return 0
 }
 
-# 修复关键问题：版本选择函数只在需要时执行一次
+# FIX BUG 1 & 2: 修复版本选择函数，确保输入"1"后能继续执行
 handle_version_tag() {
     local current_version="$1"
     local new_version=""
@@ -115,32 +115,37 @@ handle_version_tag() {
     showInfo "3). 主版本号（Major）"
     showInfo "4). 不发布版本号"
 
-    while true; do
-        echo -n "请选择 (1-4, 直接回车选择4): "
-        read -r version_choice
+    # FIX BUG 2: 使用 -n 1 确保只读取一个字符，无需按回车
+    echo -n "请选择 (1-4): "
 
-        # 处理空输入（默认选择4）
+    # FIX BUG 1: 修复输入处理逻辑
+    local version_choice
+    while IFS= read -r -n1 version_choice; do
+        # 如果用户直接按回车，选择默认值4
         if [[ -z "$version_choice" ]]; then
-            showInfo "跳过版本标签创建"
-            echo ""  # 返回空字符串
-            return 0
+            version_choice="4"
+            break
         fi
 
-        # 验证输入有效性
+        # 验证输入是否有效
         if [[ "$version_choice" =~ ^[1-4]$ ]]; then
             break
         else
-            showErr "无效的选择: '$version_choice'，请选择1-4"
+            # 清除无效输入
+            echo -ne "\r\033[K"  # 清除当前行
+            showErr "无效输入: '$version_choice'，请选择1-4"
+            echo -n "请重新选择 (1-4): "
         fi
     done
 
+    # 确保版本选择变量被设置
+    version_choice="${version_choice:-4}"
+
+    # 调试信息：显示实际接收到的输入
+    showInfo "用户选择了: $version_choice"
+
     case "$version_choice" in
-        4)
-            showInfo "跳过版本标签创建"
-            echo ""  # 返回空字符串
-            return 0
-            ;;
-        *)
+        1|2|3)
             # 处理版本递增
             if ! new_version=$(increment_version "$current_version" "$version_choice"); then
                 echo ""  # 返回空字符串表示失败
@@ -153,6 +158,9 @@ handle_version_tag() {
             local tag_message="Release $new_version"
             echo -n "请输入标签说明 (直接回车使用默认说明): "
             read -r custom_message
+
+            # 清除可能的换行符
+            custom_message=$(echo "$custom_message" | tr -d '\n\r')
 
             if [[ -n "$custom_message" ]]; then
                 tag_message="$custom_message"
@@ -169,6 +177,17 @@ handle_version_tag() {
                 echo ""  # 返回空字符串表示失败
                 return 1
             fi
+            ;;
+        4)
+            showInfo "跳过版本标签创建"
+            echo ""  # 返回空字符串
+            return 0
+            ;;
+        *)
+            # 这个分支理论上不应该到达，因为有输入验证
+            showErr "程序错误：无效的版本选择 '$version_choice'"
+            echo ""
+            return 1
             ;;
     esac
 }
@@ -200,12 +219,11 @@ git_push() {
 }
 
 # =============================================
-# 主函数 - 修复执行顺序问题
+# 主函数
 # =============================================
 
 main() {
     clear
-
     showInfo "开始Git推送流程..."
 
     # 1. 检查Git状态
@@ -218,6 +236,9 @@ main() {
     showInfo "请输入提交说明:"
     read -r commit_message
 
+    # 清除可能的换行符
+    commit_message=$(echo "$commit_message" | tr -d '\n\r')
+
     if [[ -z "$commit_message" ]]; then
         showErr "提交说明不能为空"
         return 1
@@ -228,13 +249,19 @@ main() {
         return 1
     fi
 
-    # 4. 询问版本标签（必须在推送之前！）
+    # 4. 询问版本标签
     echo ""
     showInfo "=== 版本标签设置 ==="
     local current_version=$(read_version)
     local new_version=""
 
+    # FIX: 添加调试信息
+    showInfo "调用handle_version_tag，当前版本: $current_version"
+
     if new_version=$(handle_version_tag "$current_version"); then
+        # 调试信息
+        showInfo "handle_version_tag返回: '$new_version'"
+
         # 5. 推送代码和标签
         if git_push "$new_version"; then
             echo ""
