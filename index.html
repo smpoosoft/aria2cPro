@@ -3,292 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aria2c Pro - 下载管理助手</title>
+    <title>Aria2c Ultimate Management</title>
     <style>
         :root {
-            --primary: #6366f1; --primary-hover: #4f46e5;
-            --bg: #0f172a; --panel: #1e293b; --text: #f8fafc;
-            --desc: #94a3b8; --border: #334155; --accent: #38bdf8;
+            --bg: #0d1117; --panel: #161b22; --border: #30363d;
+            --text-main: #c9d1d9; --text-dim: #8b949e; --accent: #58a6ff;
+            --danger: #f85149; --success: #3fb950; --cmd-bg: #010409;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* 左侧历史栏 */
-        .history-sidebar { width: 320px; background: rgba(30, 41, 59, 0.7); border-right: 1px solid var(--border); display: flex; flex-direction: column; backdrop-filter: blur(10px); }
-        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); font-weight: bold; color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
-        .history-list { flex: 1; overflow-y: auto; padding: 10px; }
-        .history-item { background: rgba(51, 65, 85, 0.5); padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
-        .history-item:hover { border-color: var(--primary); background: rgba(51, 65, 85, 0.8); }
-        .history-item .h-name { font-weight: 600; color: var(--text); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .history-item .h-time { font-size: 0.75rem; color: var(--desc); }
+        /* 上部区域 (5/6 高度) */
+        .workspace { flex: 5; display: flex; overflow: hidden; border-bottom: 1px solid var(--border); }
 
-        /* 右侧主面板 */
-        .main-content { flex: 1; overflow-y: auto; padding: 40px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 800px; }
-        header { margin-bottom: 30px; }
-        h1 { font-size: 1.8rem; letter-spacing: -0.025em; margin-bottom: 8px; }
-        .subtitle { color: var(--desc); font-size: 0.9rem; }
+        /* 左侧历史列表 (3/4 宽度) */
+        .history-pane { flex: 3; display: flex; flex-direction: column; background: var(--bg); }
+        .header-bar { padding: 16px 24px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .header-bar h2 { font-size: 0.9rem; color: var(--accent); letter-spacing: 1px; }
+        .history-list { flex: 1; overflow-y: auto; padding: 20px; }
 
-        /* 表单设计 */
-        .section { background: var(--panel); border-radius: 16px; padding: 24px; border: 1px solid var(--border); margin-bottom: 24px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .full { grid-column: span 2; }
-        .field { display: flex; flex-direction: column; gap: 8px; position: relative; }
-        label { font-size: 0.85rem; font-weight: 600; color: var(--desc); }
+        .item-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; position: relative; transition: 0.2s; }
+        .item-card:hover { border-color: #8b949e; }
+        .card-meta { margin-bottom: 10px; }
+        .meta-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .meta-value { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.85rem; word-break: break-all; }
+        .val-url { color: var(--text-dim); }
+        .val-path { color: var(--success); font-weight: 500; }
+        .card-delete { position: absolute; top: 16px; right: 16px; background: rgba(248,81,73,0.1); border: 1px solid var(--danger); color: var(--danger); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .card-delete:hover { background: var(--danger); color: white; }
 
-        input, select { background: #0f172a; border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; font-size: 0.95rem; outline: none; transition: 0.2s; }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
+        /* 右侧设置面板 (1/4 宽度) */
+        .settings-pane { flex: 1; min-width: 300px; background: var(--panel); border-left: 1px solid var(--border); padding: 24px; overflow-y: auto; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-dim); margin-bottom: 8px; }
+        input, select { background: var(--bg); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; width: 100%; outline: none; font-size: 0.9rem; }
+        input:focus { border-color: var(--accent); }
+        .auth-btn { background: #21262d; border: 1px solid var(--border); color: var(--accent); width: 100%; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; }
 
-        .input-with-btn { display: flex; gap: 8px; }
-        .btn { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn:hover { background: var(--primary-hover); }
-        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--desc); }
-        .btn-ghost:hover { border-color: var(--desc); color: white; }
+        /* 底部命令区域 (1/6 高度) */
+        .command-bar { flex: 1; background: var(--cmd-bg); display: flex; align-items: center; justify-content: center; padding: 0 40px; position: relative; }
+        #final-cmd { font-family: 'JetBrains Mono', 'Fira Code', monospace; color: #7ee787; font-size: 1.1rem; text-align: center; cursor: pointer; word-break: break-all; padding: 15px; transition: 0.2s; border-radius: 8px; }
+        #final-cmd:hover { background: rgba(255,255,255,0.05); color: #aff5b4; }
+        .copy-hint { position: absolute; top: 10px; font-size: 0.7rem; color: var(--text-dim); }
 
-        /* 策略卡片 */
-        .alloc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .alloc-card { background: #0f172a; border: 1px solid var(--border); padding: 14px; border-radius: 10px; cursor: pointer; transition: 0.2s; }
-        .alloc-card.active { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
-        .alloc-name { font-weight: bold; color: var(--accent); font-size: 0.9rem; margin-bottom: 4px; }
-        .alloc-desc { font-size: 0.75rem; color: var(--desc); line-height: 1.5; }
-
-        /* 输出区 */
-        .output-box { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid var(--primary); padding: 24px; border-radius: 16px; cursor: pointer; position: relative; }
-        #final-cmd { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.95rem; color: var(--accent); word-break: break-all; line-height: 1.6; }
-        .copy-hint { position: absolute; top: -10px; right: 20px; background: var(--primary); color: white; font-size: 0.7rem; padding: 2px 10px; border-radius: 4px; }
-
-        /* 动画 */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .container { animation: fadeIn 0.4s ease-out; }
+        /* 弹窗 */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; }
+        .modal { background: var(--panel); border: 1px solid var(--border); padding: 24px; border-radius: 12px; width: 400px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-<aside class="history-sidebar">
-    <div class="sidebar-header">
-        <span>历史记录</span>
-        <button class="btn-ghost" id="clear-db" style="font-size: 0.7rem; padding: 4px 8px;">清空历史</button>
+    <div class="workspace">
+        <section class="history-pane">
+            <div class="header-bar">
+                <h2>HISTORY LIST</h2>
+                <div id="dir-status" style="font-size: 0.7rem;">📁 未挂载本地目录</div>
+            </div>
+            <div class="history-list" id="history-list"></div>
+        </section>
+
+        <aside class="settings-pane">
+            <div class="form-group">
+                <label>DOWNLOAD URL</label>
+                <input type="text" id="url" placeholder="Click to paste http..." autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>FILENAME (-O)</label>
+                <input type="text" id="out" placeholder="Auto-parsed">
+            </div>
+            <div class="form-group">
+                <label>DIRECTORY (-D)</label>
+                <input type="text" id="dir" value="/smpoo_code/ai/models/">
+                <button class="auth-btn" id="btn-auth">🔐 授权本地目录删除权限</button>
+            </div>
+            <div class="form-group" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div><label>THREADS (-S)</label><input type="number" id="split" value="16"></div>
+                <div><label>CONN (-X)</label><input type="number" id="conn" value="16"></div>
+            </div>
+            <div class="form-group">
+                <label>ALLOCATION</label>
+                <select id="alloc">
+                    <option value="falloc">falloc (Linux/SSD)</option>
+                    <option value="trunc">trunc (Fast)</option>
+                    <option value="prealloc">prealloc</option>
+                    <option value="none">none</option>
+                </select>
+            </div>
+        </aside>
     </div>
-    <div class="history-list" id="history-list">
-        </div>
-</aside>
 
-<main class="main-content">
-    <div class="container">
-        <header>
-            <h1>Aria2c Pro Download Tool</h1>
-            <p class="subtitle">针对 AI 模型下载优化的命令生成器</p>
-        </header>
+    <footer class="command-bar">
+        <span class="copy-hint">点击命令：复制代码并记录历史</span>
+        <div id="final-cmd">aria2c ...</div>
+    </footer>
 
-        <div class="section">
-            <div class="grid">
-                <div class="field full">
-                    <label>模型下载 URL (点击空白处粘贴并解析)</label>
-                    <div class="input-with-btn">
-                        <input type="text" id="url" placeholder="https://..." autocomplete="off" style="flex:1">
-                        <button class="btn-ghost" id="clear-url">清空</button>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label>保存文件名 (-o)</label>
-                    <input type="text" id="out" placeholder="自动解析文件名...">
-                </div>
-
-                <div class="field">
-                    <label>保存目录 (-d)</label>
-                    <div class="input-with-btn">
-                        <input type="text" id="dir" placeholder="/smpoo_code/ai/models/">
-                        <button class="btn-ghost" id="pick-dir">📁</button>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label>线程/连接数 (-s / -x)</label>
-                    <div class="input-with-btn">
-                        <input type="number" id="split" value="16" style="width:50%">
-                        <input type="number" id="conn" value="16" style="width:50%">
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label>断点续传 (-c)</label>
-                    <select id="continue">
-                        <option value="true">开启 (推荐)</option>
-                        <option value="false">关闭</option>
-                    </select>
-                </div>
-
-                <div class="field full">
-                    <label>磁盘预分配策略 (--file-allocation)</label>
-                    <div class="alloc-grid" id="alloc-container">
-                        <div class="alloc-card active" data-value="falloc">
-                            <div class="alloc-name">falloc</div>
-                            <div class="alloc-desc">现代 Linux 推荐。瞬间分配海量空间，不占 IO 带宽。</div>
-                        </div>
-                        <div class="alloc-card" data-value="trunc">
-                            <div class="alloc-name">trunc</div>
-                            <div class="alloc-desc">通过 ftruncate 瞬间创建。极速，适合主流文件系统。</div>
-                        </div>
-                        <div class="alloc-card" data-value="prealloc">
-                            <div class="alloc-name">prealloc</div>
-                            <div class="alloc-desc">传统零填充。在开始下载前完全预写空间。</div>
-                        </div>
-                        <div class="alloc-card" data-value="none">
-                            <div class="alloc-name">none</div>
-                            <div class="alloc-desc">不分配空间。边下边写，可能导致碎片。</div>
-                        </div>
-                    </div>
-                </div>
+    <div class="modal-overlay" id="modal-delete">
+        <div class="modal">
+            <h3 style="color:var(--danger); margin-bottom:12px;">删除记录</h3>
+            <p style="font-size: 0.9rem; margin-bottom:16px;">确定要移除该下载记录吗？</p>
+            <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer;">
+                <input type="checkbox" id="check-physical" style="width:auto;"> 同时彻底删除物理文件及 .aria2 碎片
+            </label>
+            <div class="modal-footer">
+                <button class="auth-btn" style="width:auto;" onclick="closeModal()">取消</button>
+                <button class="auth-btn" id="btn-confirm-del" style="width:auto; background:var(--danger); border-color:var(--danger); color:white;">确认执行</button>
             </div>
         </div>
-
-        <div class="output-box" id="copy-zone">
-            <span class="copy-hint">点击复制并存入历史</span>
-            <div id="final-cmd">aria2c ...</div>
-        </div>
     </div>
-</main>
 
 <script type="module">
-    let db;
-    let currentAlloc = 'falloc';
+    let db, rootHandle, pendingId, pendingFilename;
 
-    // 1. IndexedDB 初始化
-    const request = indexedDB.open("localAria2c", 1);
-    request.onupgradeneeded = e => {
-        db = e.target.result;
-        db.createObjectStore("downloads", { keyPath: "id", autoIncrement: true });
-    };
-    request.onsuccess = e => {
-        db = e.target.result;
-        renderHistory();
+    // IndexedDB 初始化
+    const openDB = () => {
+        const req = indexedDB.open("aria2_manager", 1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore("history", { keyPath: "id", autoIncrement: true });
+        req.onsuccess = e => { db = e.target.result; renderHistory(); };
     };
 
-    // 2. 核心元素获取
     const els = {
-        url: document.getElementById('url'),
-        out: document.getElementById('out'),
-        dir: document.getElementById('dir'),
-        split: document.getElementById('split'),
-        conn: document.getElementById('conn'),
-        cont: document.getElementById('continue'),
-        cmd: document.getElementById('final-cmd'),
-        hist: document.getElementById('history-list'),
-        cards: document.querySelectorAll('.alloc-card')
+        url: document.querySelector('#url'), out: document.querySelector('#out'),
+        dir: document.querySelector('#dir'), split: document.querySelector('#split'),
+        conn: document.querySelector('#conn'), alloc: document.querySelector('#alloc'),
+        cmd: document.querySelector('#final-cmd'), hist: document.querySelector('#history-list')
     };
 
-    // 3. 智能文件名解析
-    function parseFileName(url) {
-        try {
-            const path = new URL(url).pathname;
-            let filename = path.substring(path.lastIndexOf('/') + 1);
-            // 处理常见的镜像站后缀
-            if (filename.includes('?')) filename = filename.split('?')[0];
-            return decodeURIComponent(filename) || '';
-        } catch (e) { return ''; }
-    }
+    // 目录授权
+    document.querySelector('#btn-auth').onclick = async () => {
+        rootHandle = await window.showDirectoryPicker();
+        document.querySelector('#dir-status').textContent = `✅ 已接管目录：${rootHandle.name}`;
+        document.querySelector('#dir-status').style.color = 'var(--success)';
+    };
 
-    // 4. URL 粘贴逻辑
+    const update = () => {
+        const u = els.url.value || '[URL]';
+        const d = els.dir.value;
+        const o = els.out.value;
+        els.cmd.textContent = `aria2c -c -x ${els.conn.value} -s ${els.split.value} -k 1M --file-allocation=${els.alloc.value} -d "${d}" ${o ? `-o "${o}"` : ''} "${u}"`;
+    };
+
+    // 智能解析并粘贴
     els.url.onclick = async () => {
         if (!els.url.value) {
-            const text = await navigator.clipboard.readText();
-            if (text.startsWith('http')) {
-                els.url.value = text;
-                const fileName = parseFileName(text);
-                if (fileName) els.out.value = fileName;
+            const t = await navigator.clipboard.readText();
+            if (t.startsWith('http')) {
+                els.url.value = t;
+                const path = new URL(t).pathname;
+                let name = path.split('/').pop();
+                if (name.includes('?')) name = name.split('?')[0];
+                els.out.value = decodeURIComponent(name);
                 update();
             }
         }
     };
 
-    els.url.oninput = () => {
-        const fileName = parseFileName(els.url.value);
-        if (fileName) els.out.value = fileName;
-        update();
-    };
-
-    // 5. 状态更新
-    function update() {
-        const u = els.url.value.trim() || '[URL]';
-        const d = els.dir.value.trim() || '/smpoo_code/ai/models/';
-        const o = els.out.value.trim();
-        const s = els.split.value;
-        const x = els.conn.value;
-        const c = els.cont.value === 'true' ? ' -c' : '';
-
-        let base = `aria2c${c} -x ${x} -s ${s} -k 1M --file-allocation=${currentAlloc}`;
-        base += ` -d "${d}"`;
-        if (o) base += ` -o "${o}"`;
-        base += ` "${u}"`;
-
-        els.cmd.textContent = base;
-    }
-
-    // 6. 数据库操作
-    function saveToHistory(command, name) {
-        const tx = db.transaction("downloads", "readwrite");
-        tx.objectStore("downloads").add({
-            name: name || '未命名任务',
-            command: command,
+    // 点击复制并保存
+    els.cmd.onclick = () => {
+        if (!els.url.value) return;
+        const cmdText = els.cmd.textContent;
+        const name = els.out.value || els.url.value.split('/').pop();
+        const tx = db.transaction("history", "readwrite");
+        tx.objectStore("history").add({
+            url: els.url.value,
+            path: els.dir.value + name,
+            filename: name,
+            command: cmdText,
             time: new Date().toLocaleString()
         });
-        tx.oncomplete = renderHistory;
-    }
+        tx.oncomplete = () => {
+            renderHistory();
+            navigator.clipboard.writeText(cmdText);
+            alert("📋 命令已复制，历史已存入数据库！");
+        };
+    };
 
-    function renderHistory() {
+    const renderHistory = () => {
         if (!db) return;
-        const tx = db.transaction("downloads", "readonly");
-        const store = tx.objectStore("downloads");
-        store.getAll().onsuccess = e => {
-            const data = e.target.result.reverse(); // 最新的在前
-            els.hist.innerHTML = data.map(item => `
-                <div class="history-item" onclick="navigator.clipboard.writeText('${item.command}')">
-                    <div class="h-name">${item.name}</div>
-                    <div class="h-time">${item.time}</div>
+        db.transaction("history", "readonly").objectStore("history").getAll().onsuccess = e => {
+            els.hist.innerHTML = e.target.result.reverse().map(i => `
+                <div class="item-card">
+                    <button class="card-delete" onclick="triggerDelete(${i.id}, '${i.filename}')">删除</button>
+                    <div class="card-meta">
+                        <span class="meta-label">Source URL</span>
+                        <div class="meta-value val-url">${i.url}</div>
+                    </div>
+                    <div class="card-meta">
+                        <span class="meta-label">Local Save Path</span>
+                        <div class="meta-value val-path">${i.path}</div>
+                    </div>
+                    <div style="font-size:0.65rem; color:var(--text-dim)">CREATED: ${i.time}</div>
                 </div>
             `).join('');
         };
-    }
-
-    // 7. 事件监听
-    document.getElementById('copy-zone').onclick = () => {
-        const cmdText = els.cmd.textContent;
-        navigator.clipboard.writeText(cmdText).then(() => {
-            saveToHistory(cmdText, els.out.value || parseFileName(els.url.value));
-            alert('已成功复制并存入历史记录！');
-        });
     };
 
-    document.getElementById('clear-db').onclick = () => {
-        const tx = db.transaction("downloads", "readwrite");
-        tx.objectStore("downloads").clear();
-        tx.oncomplete = renderHistory;
+    window.triggerDelete = (id, fname) => {
+        pendingId = id; pendingFilename = fname;
+        document.querySelector('#modal-delete').style.display = 'flex';
     };
 
-    document.getElementById('clear-url').onclick = () => { els.url.value = ''; els.out.value = ''; update(); };
+    window.closeModal = () => document.querySelector('#modal-delete').style.display = 'none';
 
-    els.cards.forEach(card => {
-        card.onclick = () => {
-            els.cards.forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            currentAlloc = card.dataset.value;
-            update();
-        };
-    });
-
-    [els.url, els.out, els.dir, els.split, els.conn, els.cont].forEach(el => el.oninput = update);
-
-    // 文件夹 API
-    document.getElementById('pick-dir').onclick = async () => {
-        try {
-            const handle = await window.showDirectoryPicker();
-            els.dir.value = `/smpoo_code/ai/models/${handle.name}`;
-            update();
-        } catch (e) {}
+    document.querySelector('#btn-confirm-del').onclick = async () => {
+        if (document.querySelector('#check-physical').checked && rootHandle) {
+            try {
+                await rootHandle.removeEntry(pendingFilename);
+                await rootHandle.removeEntry(pendingFilename + ".aria2");
+            } catch (err) { console.warn("文件清理跳过（可能不存在）"); }
+        }
+        const tx = db.transaction("history", "readwrite");
+        tx.objectStore("history").delete(pendingId);
+        tx.oncomplete = () => { closeModal(); renderHistory(); };
     };
 
-    update();
+    [els.url, els.out, els.dir, els.split, els.conn, els.alloc].forEach(el => el.oninput = update);
+    openDB(); update();
 </script>
 </body>
 </html>
