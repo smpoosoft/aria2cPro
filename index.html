@@ -3,72 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aria2c Pro v1.0.8</title>
+    <title>Aria2c Pro v1.1.0</title>
     <style>
         * { padding: 0; margin: 0; overflow: hidden; font-size: 13px; box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, sans-serif; background: #0d1117; color: #c9d1d9; }
-
-        /* 外层 Grid 框架 */
-        .wrapper {
-            display: grid;
-            grid-template-rows: 40px 1fr 80px;
-            width: 100vw; height: 100vh;
-        }
-
+        .wrapper { display: grid; grid-template-rows: 40px 1fr 80px; width: 100vw; height: 100vh; }
         .pageTitle { background: #161b22; border-bottom: 1px solid #30363d; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; color: #58a6ff; font-weight: bold; }
-
-        /* 工作区 Grid */
-        .workzone {
-            display: grid;
-            grid-template-columns: 1fr 22vw;
-            column-gap: 2px; background: #30363d;
-        }
-
-        /* 左侧历史列表 */
+        .workzone { display: grid; grid-template-columns: 1fr 22vw; column-gap: 2px; background: #30363d; }
         .panelHis { display: grid; grid-template-rows: 64px 1fr; background: #0d1117; }
         .hisTitle { display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #161b22; border-bottom: 1px solid #30363d; }
         .hisTitle span { cursor: pointer; color: #8b949e; user-select: none; font-weight: 500; }
         .hisTitle span:hover { color: #58a6ff; }
         .main-label { color: #f0f6fc !important; font-size: 15px; font-weight: 600; margin-right: 10px; }
-
         .hisList { list-style: none; overflow-y: auto; padding: 16px; }
-        .hisItem {
-            display: grid; grid-template-columns: 40px 1fr 1fr 48px;
-            align-items: center; min-height: 54px;
-            background: #161b22; border: 1px solid #30363d;
-            border-radius: 6px; margin-bottom: 8px; padding: 0 12px;
-        }
+        .hisItem { display: grid; grid-template-columns: 40px 1fr 1fr 48px; align-items: center; min-height: 54px; background: #161b22; border: 1px solid #30363d; border-radius: 6px; margin-bottom: 8px; padding: 0 12px; }
         .hisItem:hover { border-color: #58a6ff; }
         .cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 10px; font-family: 'JetBrains Mono', monospace; }
         .url-cell { color: #8b949e; cursor: pointer; }
         .path-cell { color: #3fb950; cursor: pointer; }
         .del-btn { color: #f85149; text-align: center; cursor: pointer; font-size: 18px; }
-
-        /* 右侧参数区 */
         .panelParam { background: #161b22; padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
         .form-field { display: flex; flex-direction: column; gap: 5px; }
         label { font-size: 11px; color: #8b949e; font-weight: 700; text-transform: uppercase; }
         input, select { background: #0d1117; border: 1px solid #30363d; color: white; padding: 8px; border-radius: 4px; outline: none; }
         input:focus { border-color: #58a6ff; }
-
-        /* Allocation 卡片 */
         .alloc-grid { display: grid; grid-template-columns: 1fr; gap: 4px; }
-        .alloc-card {
-            background: #0d1117; border: 1px solid #30363d; padding: 8px;
-            border-radius: 4px; cursor: pointer; transition: 0.1s;
-        }
+        .alloc-card { background: #0d1117; border: 1px solid #30363d; padding: 8px; border-radius: 4px; cursor: pointer; transition: 0.1s; }
         .alloc-card.active { border-color: #58a6ff; background: rgba(88, 166, 255, 0.1); }
         .alloc-name { font-weight: bold; color: #58a6ff; font-size: 12px; }
         .alloc-desc { font-size: 10px; color: #8b949e; line-height: 1.2; }
-
-        /* 底部命令 */
-        .commandZone {
-            background: #000; display: flex; align-items: center; justify-content: center;
-            padding: 0 40px; color: #7ee787; font-family: 'JetBrains Mono', monospace;
-            cursor: pointer; border-top: 1px solid #30363d; font-size: 1.1rem;
-        }
-
-        /* 确认弹窗 */
+        .commandZone { background: #000; display: flex; align-items: center; justify-content: center; padding: 0 40px; color: #7ee787; font-family: 'JetBrains Mono', monospace; cursor: pointer; border-top: 1px solid #30363d; font-size: 1.1rem; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 100; }
         .modal-content { background: #161b22; border: 1px solid #30363d; padding: 24px; border-radius: 12px; width: 380px; }
         .btn-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
@@ -78,8 +42,7 @@
 <body>
 
 <div class="wrapper">
-    <div class="pageTitle">ARIA2C PRO - V1.0.8 MASTER</div>
-
+    <div class="pageTitle">ARIA2C PRO - V1.1.0</div>
     <div class="workzone">
         <div class="panelHis">
             <div class="hisTitle">
@@ -91,19 +54,18 @@
             </div>
             <ul class="hisList" id="his-ul"></ul>
         </div>
-
         <aside class="panelParam">
             <div class="form-field">
-                <label>Download URL (Click to Paste)</label>
-                <input type="text" id="url-in" placeholder="点击空白区域粘贴..." autocomplete="off">
+                <label>Download URL</label>
+                <input type="text" id="url-in" placeholder="点击此处直接粘贴..." autocomplete="off">
             </div>
             <div class="form-field">
                 <label>Filename (-o)</label>
-                <input type="text" id="out-in" placeholder="将自动从 URL 解析">
+                <input type="text" id="out-in" placeholder="自动解析文件名">
             </div>
             <div class="form-field">
-                <label>Directory (-d) (Click to Paste)</label>
-                <input type="text" id="dir-in" placeholder="点击空白区域粘贴路径...">
+                <label>Directory (-d)</label>
+                <input type="text" id="dir-in" placeholder="点击此处直接粘贴路径...">
             </div>
             <div class="form-field">
                 <label>Threads / Conn</label>
@@ -121,24 +83,23 @@
                 <div class="alloc-grid">
                     <div class="alloc-card active" data-val="falloc"><div class="alloc-name">falloc</div><div class="alloc-desc">Linux 推荐，瞬间分配。</div></div>
                     <div class="alloc-card" data-val="trunc"><div class="alloc-name">trunc</div><div class="alloc-desc">截断指令分配，速度极快。</div></div>
-                    <div class="alloc-card" data-val="prealloc"><div class="alloc-name">prealloc</div><div class="alloc-desc">传统写零预分配。</div></div>
-                    <div class="alloc-card" data-val="sparse"><div class="alloc-name">sparse</div><div class="alloc-desc">稀疏文件，节省磁盘。</div></div>
-                    <div class="alloc-card" data-val="none"><div class="alloc-name">none</div><div class="alloc-desc">边下边写，不预分配。</div></div>
+                    <div class="alloc-card" data-val="prealloc"><div class="alloc-name">prealloc</div><div class="alloc-desc">传统预分配。</div></div>
+                    <div class="alloc-card" data-val="sparse"><div class="alloc-name">sparse</div><div class="alloc-desc">稀疏模式。</div></div>
+                    <div class="alloc-card" data-val="none"><div class="alloc-name">none</div><div class="alloc-desc">不预分配。</div></div>
                 </div>
             </div>
         </aside>
     </div>
-
-    <div class="commandZone" id="cmd-out">点击生成命令并存入历史</div>
+    <div class="commandZone" id="cmd-out">等待输入...</div>
 </div>
 
 <div class="modal" id="del-modal">
     <div class="modal-content">
-        <h3 style="color:#f85149; margin-bottom:15px;">删除记录</h3>
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" id="sync-file" style="width:auto"> 同时物理删除文件 & 碎片</label>
+        <h3 style="color:#f85149; margin-bottom:15px;">确认删除</h3>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" id="sync-file" style="width:auto"> 物理删除本地文件</label>
         <div class="btn-row">
             <button class="btn" onclick="handler.closeModal()">取消</button>
-            <button class="btn" style="background:#f85149; border-color:#f85149;" id="confirm-del-btn">确认删除</button>
+            <button class="btn" style="background:#f85149;" id="confirm-del-btn">确认删除记录</button>
         </div>
     </div>
 </div>
@@ -147,7 +108,7 @@
     let db, rootHandle, pendingId, pendingFile, currentAlloc = 'falloc';
 
     const initDB = () => {
-        const req = indexedDB.open("Aria2_Final_v8", 1);
+        const req = indexedDB.open("Aria2_Final_v110", 1);
         req.onupgradeneeded = e => e.target.result.createObjectStore("history", { keyPath: "id", autoIncrement: true });
         req.onsuccess = e => { db = e.target.result; handler.render(); };
     };
@@ -178,55 +139,47 @@
         askDelete: (id, f) => { pendingId = id; pendingFile = f; document.getElementById('del-modal').style.display='flex'; },
         closeModal: () => document.getElementById('del-modal').style.display='none',
         selectAll: (s) => document.querySelectorAll('.his-check').forEach(c => c.checked = s),
-        clearAll: () => { if(confirm("清空历史？")) db.transaction("history", "readwrite").objectStore("history").clear().onsuccess = () => handler.render(); }
+        clearAll: () => { if(confirm("清空历史记录？")) db.transaction("history", "readwrite").objectStore("history").clear().onsuccess = () => handler.render(); }
     };
 
-    // 目录授权
     document.getElementById('auth-btn').onclick = async () => {
         try {
             rootHandle = await window.showDirectoryPicker();
             document.getElementById('auth-btn').textContent = `✅ 目录: ${rootHandle.name}`;
             handler.update();
-        } catch (e) {}
+        } catch(e) {}
     };
 
-    // 物理删除逻辑
     document.getElementById('confirm-del-btn').onclick = async () => {
         if (document.getElementById('sync-file').checked && rootHandle && pendingFile) {
-            try {
-                await rootHandle.removeEntry(pendingFile);
-                await rootHandle.removeEntry(pendingFile + ".aria2");
-            } catch (e) { console.warn("物理删除失败:", e); }
+            try { await rootHandle.removeEntry(pendingFile); await rootHandle.removeEntry(pendingFile + ".aria2"); } catch (e) {}
         }
         db.transaction("history", "readwrite").objectStore("history").delete(pendingId).onsuccess = () => { handler.closeModal(); handler.render(); };
     };
 
-    // 统一粘贴处理函数
-    const pasteToInput = async (el, parseName = false) => {
-        if (!el.value) {
-            try {
-                const t = await navigator.clipboard.readText();
-                if (!t) return;
-                el.value = t;
-                if (parseName && t.startsWith('http')) {
-                    const p = new URL(t).pathname;
-                    document.getElementById('out-in').value = decodeURIComponent(p.split('/').pop().split('?')[0]);
-                }
-                handler.update();
-            } catch (e) { console.error("粘贴失败:", e); }
+    // 核心交互修复：删除了 if(!el.value) 的拦截。现在任何时候点击都会执行粘贴并覆盖。
+    const pasteAction = async (el, isUrl = false) => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (!text) return;
+            el.value = text;
+            if (isUrl && text.startsWith('http')) {
+                const path = new URL(text).pathname;
+                document.getElementById('out-in').value = decodeURIComponent(path.split('/').pop().split('?')[0]);
+            }
+            handler.update();
+        } catch (err) {
+            console.error('无法读取剪贴板', err);
         }
     };
 
-    // 绑定 URL 粘贴
-    document.getElementById('url-in').onclick = (e) => pasteToInput(e.target, true);
-    // 绑定 Directory 粘贴
-    document.getElementById('dir-in').onclick = (e) => pasteToInput(e.target, false);
+    document.getElementById('url-in').onclick = (e) => pasteAction(e.target, true);
+    document.getElementById('dir-in').onclick = (e) => pasteAction(e.target, false);
 
-    // 底部命令保存逻辑
     document.getElementById('cmd-out').onclick = function() {
         const val = this.textContent;
         const u = document.getElementById('url-in').value;
-        if (!u) return;
+        if (!u || u === '[URL]') return;
         db.transaction("history", "readwrite").objectStore("history").add({
             url: u,
             path: (document.getElementById('dir-in').value || '.') + "/" + (document.getElementById('out-in').value || u.split('/').pop()),
@@ -235,11 +188,9 @@
         }).onsuccess = () => {
             navigator.clipboard.writeText(val);
             handler.render();
-            alert("已复制并记录历史");
         };
     };
 
-    // Allocation 切换
     document.querySelectorAll('.alloc-card').forEach(card => {
         card.onclick = () => {
             document.querySelectorAll('.alloc-card').forEach(c => c.classList.remove('active'));
