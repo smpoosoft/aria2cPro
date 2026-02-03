@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aria2c Pro - Grid Logic</title>
+    <title>Aria2c Pro - Power User Edition</title>
     <style>
-        /* 基础复位 */
+        /* 基础复位与 Grid 骨架 */
         * { padding: 0; margin: 0; overflow: hidden; font-size: 14px; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0d1117; color: #c9d1d9; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: #0d1117; color: #c9d1d9; }
 
-        /* 外层包装：三行结构 (标题 40px, 主区 1fr, 命令区 80px) */
         .wrapper {
             display: grid;
             grid-template-rows: 40px 1fr 80px;
@@ -23,21 +22,21 @@
             border-bottom: 1px solid #30363d;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 0 20px;
             color: #58a6ff;
             font-weight: bold;
-            letter-spacing: 1px;
         }
 
-        /* 工作区域：两列结构 (历史 1fr, 参数 20vw) */
+        /* 工作区域 */
         .workzone {
             display: grid;
-            grid-template-columns: 1fr 20vw;
-            column-gap: 4px;
-            background: #010409; /* 缝隙颜色 */
+            grid-template-columns: 1fr 24vw; /* 稍微加宽参数区以容纳描述 */
+            column-gap: 2px;
+            background: #30363d;
         }
 
-        /* 历史面板布局 (标题 64px, 列表 1fr) */
+        /* 1. 左侧：下载历史面板 */
         .panelHis {
             display: grid;
             grid-template-rows: 64px 1fr;
@@ -47,162 +46,200 @@
         .hisTitle {
             display: inline-flex;
             align-items: center;
-            gap: 15px;
-            padding: 0 20px;
+            gap: 20px;
+            padding: 0 24px;
             background: #161b22;
             border-bottom: 1px solid #30363d;
         }
-
-        .hisTitle span { cursor: pointer; color: #8b949e; transition: 0.2s; }
+        .hisTitle span { cursor: pointer; color: #8b949e; font-weight: 500; }
         .hisTitle span:hover { color: #58a6ff; }
-        .hisTitle .main-label { color: #f0f6fc; font-weight: 600; margin-right: 10px; cursor: default; }
+        .hisTitle .active-label { color: #f0f6fc; font-size: 1.1rem; }
 
-        /* 历史列表项布局 (选择 | URL | Path | 删除) */
-        ul { list-style: none; overflow-y: auto; padding: 10px; }
+        .hisList { list-style: none; overflow-y: auto; padding: 16px; }
         .hisItem {
             display: grid;
-            grid-template-columns: 40px 1fr 1fr 40px;
+            grid-template-columns: 40px 1fr 1fr 48px;
             align-items: center;
-            height: 48px;
+            min-height: 54px;
             background: #161b22;
             border: 1px solid #30363d;
-            border-radius: 4px;
-            margin-bottom: 4px;
-            padding: 0 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            padding: 0 12px;
             transition: 0.2s;
         }
+        .hisItem:hover { border-color: #58a6ff; background: #1c2128; }
+        .hisItem span {
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            padding: 0 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+        }
+        .url-cell { color: #8b949e; cursor: copy; }
+        .path-cell { color: #3fb950; cursor: copy; }
+        .del-cell { cursor: pointer; text-align: center; color: #f85149; opacity: 0.7; }
+        .del-cell:hover { opacity: 1; }
 
-        .hisItem:hover { border-color: #8b949e; background: #1c2128; }
-        .hisItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 10px; font-family: monospace; font-size: 12px; cursor: pointer; }
-        .hisItem .url-val { color: #8b949e; }
-        .hisItem .path-val { color: #3fb950; }
-
-        /* 参数控制区域 */
+        /* 2. 右侧：参数控制面板 */
         .panelParam {
             background: #161b22;
-            padding: 20px;
+            padding: 24px;
             border-left: 1px solid #30363d;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 20px;
             overflow-y: auto;
         }
-
-        .form-field { display: flex; flex-direction: column; gap: 5px; }
-        .form-field label { font-size: 12px; color: #8b949e; font-weight: bold; }
-        input, select { background: #0d1117; border: 1px solid #30363d; color: white; padding: 8px; border-radius: 4px; outline: none; }
+        .form-field { display: flex; flex-direction: column; gap: 8px; }
+        .form-field label { font-size: 12px; color: #8b949e; font-weight: 600; text-transform: uppercase; }
+        input, select { background: #0d1117; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 6px; outline: none; }
         input:focus { border-color: #58a6ff; }
 
-        /* 命令输出区域 */
+        /* 高级 Allocation 选项卡 */
+        .alloc-container { display: flex; flex-direction: column; gap: 8px; }
+        .alloc-card {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .alloc-card.active { border-color: #58a6ff; background: rgba(88, 166, 255, 0.1); }
+        .alloc-card:hover:not(.active) { border-color: #8b949e; }
+        .alloc-name { font-weight: bold; color: #58a6ff; font-size: 13px; margin-bottom: 4px; }
+        .alloc-desc { font-size: 11px; color: #8b949e; line-height: 1.4; white-space: normal; }
+
+        /* 底部：命令输出区域 */
         .commandZone {
-            width: 100vw;
             background: #000;
-            border-top: 2px solid #58a6ff;
+            border-top: 1px solid #30363d;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 40px;
+            padding: 0 60px;
             color: #7ee787;
             font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
             cursor: pointer;
             text-align: center;
+            transition: 0.2s;
         }
+        .commandZone:hover { background: #0d1117; color: #aff5b4; }
 
-        /* 弹窗样式 */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 100; }
-        .modal-body { background: #161b22; border: 1px solid #30363d; padding: 25px; border-radius: 8px; width: 350px; }
-        .btn-group { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-        .btn { padding: 5px 12px; border-radius: 4px; cursor: pointer; border: 1px solid #30363d; background: #21262d; color: #c9d1d9; }
-        .btn-danger { border-color: #f85149; color: #f85149; }
+        /* 模态弹窗 */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-body { background: #161b22; border: 1px solid #30363d; padding: 24px; border-radius: 12px; width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .btn-group { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+        .btn { padding: 8px 16px; border-radius: 6px; cursor: pointer; border: 1px solid #30363d; background: #21262d; color: #c9d1d9; font-weight: 600; }
+        .btn-danger { background: #f85149; border-color: #f85149; color: white; }
     </style>
 </head>
 <body>
     <div class="wrapper">
-        <div class="pageTitle">ARIA2C PRO - NUC AI DOWNLOADER</div>
+        <header class="pageTitle">
+            <span>ARIA2C PRO v2.6.0</span>
+            <span id="auth-status" style="font-size: 12px; color: #8b949e; cursor: pointer;">🔐 授权本地目录权限</span>
+        </header>
 
         <div class="workzone">
             <div class="panelHis">
                 <div class="hisTitle">
-                    <span class="main-label">下载历史</span>
-                    <span id="btn-clear">清空</span>
-                    <span id="btn-all">全选</span>
-                    <span id="btn-rev">反选</span>
-                    <span id="dir-auth" style="font-size: 12px; margin-left: auto;">🔐 授权删除权限</span>
+                    <span class="active-label">下载历史</span>
+                    <span id="btn-clear-all">清空历史</span>
+                    <span id="btn-select-all">全选</span>
+                    <span id="btn-select-rev">反选</span>
                 </div>
-                <ul id="history-list">
+                <ul class="hisList" id="his-ul">
                     </ul>
             </div>
 
-            <div class="panelParam">
+            <aside class="panelParam">
                 <div class="form-field">
-                    <label>DOWNLOAD URL</label>
-                    <input type="text" id="url" placeholder="点击粘贴 URL..." autocomplete="off">
+                    <label>Download URL</label>
+                    <input type="text" id="url-input" placeholder="点击空白粘贴地址..." autocomplete="off">
                 </div>
                 <div class="form-field">
-                    <label>FILENAME (-O)</label>
-                    <input type="text" id="out" placeholder="自动解析文件名">
+                    <label>Save Filename (-o)</label>
+                    <input type="text" id="out-input" placeholder="文件名将自动解析">
                 </div>
                 <div class="form-field">
-                    <label>DIRECTORY (-D)</label>
-                    <input type="text" id="dir" value="/smpoo_code/ai/models/">
+                    <label>Directory (-d)</label>
+                    <input type="text" id="dir-input" value="/smpoo_code/ai/models/">
                 </div>
                 <div class="form-field">
-                    <label>THREADS/CONN</label>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-                        <input type="number" id="split" value="16">
-                        <input type="number" id="conn" value="16">
+                    <label>Threads / Conn</label>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <input type="number" id="split-input" value="16">
+                        <input type="number" id="conn-input" value="16">
                     </div>
                 </div>
                 <div class="form-field">
-                    <label>ALLOCATION</label>
-                    <select id="alloc">
-                        <option value="falloc">falloc (Linux)</option>
-                        <option value="trunc">trunc</option>
-                        <option value="prealloc">prealloc</option>
-                    </select>
+                    <label>Allocation Strategy</label>
+                    <div class="alloc-container" id="alloc-box">
+                        <div class="alloc-card active" data-val="falloc">
+                            <div class="alloc-name">falloc</div>
+                            <div class="alloc-desc">现代 Linux 推荐。瞬间分配文件空间，不产生 IO 写入，极速启动。</div>
+                        </div>
+                        <div class="alloc-card" data-val="trunc">
+                            <div class="alloc-name">trunc</div>
+                            <div class="alloc-desc">利用 ftruncate 瞬间创建。极快，但部分旧版系统可能产生碎片。</div>
+                        </div>
+                        <div class="alloc-card" data-val="prealloc">
+                            <div class="alloc-name">prealloc</div>
+                            <div class="alloc-desc">传统零填充预写。在开始下载前确保空间完全连续，耗时较久。</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </aside>
         </div>
 
-        <div class="commandZone" id="final-cmd">点击此处复制最终生成的命令</div>
+        <footer class="commandZone" id="cmd-output">
+            等待输入下载地址...
+        </footer>
     </div>
 
-    <div class="modal" id="del-modal">
+    <div class="modal" id="modal-del">
         <div class="modal-body">
-            <h4 style="margin-bottom: 10px; color: #f85149;">确认删除记录？</h4>
-            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
-                <input type="checkbox" id="physical-del"> 同时物理删除本地文件及碎片
+            <h3 style="color: #f85149; margin-bottom: 15px;">确认删除</h3>
+            <p style="font-size: 13px; margin-bottom: 20px; line-height: 1.6;">确定要移除此下载记录吗？</p>
+            <label style="display: flex; align-items:center; gap:10px; font-size: 13px; cursor: pointer; color: #8b949e;">
+                <input type="checkbox" id="check-physical" style="width: auto;"> 同时物理删除硬盘上的模型文件及 .aria2 碎片
             </label>
             <div class="btn-group">
                 <button class="btn" onclick="closeModal()">取消</button>
-                <button class="btn btn-danger" id="btn-confirm-del">确认删除</button>
+                <button class="btn btn-danger" id="confirm-del-btn">确认删除</button>
             </div>
         </div>
     </div>
 
 <script type="module">
-    let db, rootHandle, pendingId, pendingFile;
+    let db, rootHandle, pendingId, pendingFile, currentAlloc = 'falloc';
 
     // 1. IndexedDB 初始化
-    const openDB = () => {
-        const req = indexedDB.open("aria2_grid_db", 1);
-        req.onupgradeneeded = e => e.target.result.createObjectStore("history", { keyPath: "id", autoIncrement: true });
-        req.onsuccess = e => { db = e.target.result; render(); };
+    const request = indexedDB.open("Aria2cPro_Grid", 2);
+    request.onupgradeneeded = e => {
+        const d = e.target.result;
+        if(!d.objectStoreNames.contains("history")) d.createObjectStore("history", { keyPath: "id", autoIncrement: true });
     };
+    request.onsuccess = e => { db = e.target.result; render(); };
 
-    // 2. 核心逻辑
     const els = {
-        url: document.getElementById('url'),
-        out: document.getElementById('out'),
-        dir: document.getElementById('dir'),
-        split: document.getElementById('split'),
-        conn: document.getElementById('conn'),
-        alloc: document.getElementById('alloc'),
-        cmd: document.getElementById('final-cmd'),
-        hist: document.getElementById('history-list')
+        url: document.getElementById('url-input'),
+        out: document.getElementById('out-input'),
+        dir: document.getElementById('dir-input'),
+        split: document.getElementById('split-input'),
+        conn: document.getElementById('conn-input'),
+        cmd: document.getElementById('cmd-output'),
+        list: document.getElementById('his-ul')
     };
 
-    // 自动粘贴与解析
+    // 2. 交互逻辑
+    const updateCmd = () => {
+        const u = els.url.value.trim() || '[URL]';
+        const o = els.out.value.trim();
+        const cmd = `aria2c -c -x ${els.conn.value} -s ${els.split.value} -k 1M --file-allocation=${currentAlloc} -d "${els.dir.value}" ${o ? `-o "${o}"` : ''} "${u}"`;
+        els.cmd.textContent = cmd;
+    };
+
     els.url.onclick = async () => {
         if (!els.url.value) {
             const t = await navigator.clipboard.readText();
@@ -210,75 +247,84 @@
                 els.url.value = t;
                 const path = new URL(t).pathname;
                 els.out.value = decodeURIComponent(path.split('/').pop().split('?')[0]);
-                update();
+                updateCmd();
             }
         }
     };
 
-    const update = () => {
-        const cmd = `aria2c -c -x ${els.conn.value} -s ${els.split.value} -k 1M --file-allocation=${els.alloc.value} -d "${els.dir.value}" ${els.out.value ? `-o "${els.out.value}"` : ''} "${els.url.value || '[URL]'}"`;
-        els.cmd.textContent = cmd;
-    };
-
-    // 写入历史
+    // 复制并存入历史
     els.cmd.onclick = () => {
         if (!els.url.value) return;
+        const cmdText = els.cmd.textContent;
         const tx = db.transaction("history", "readwrite");
         tx.objectStore("history").add({
             url: els.url.value,
-            path: els.dir.value + (els.out.value || 'download'),
-            filename: els.out.value,
-            command: els.cmd.textContent
+            path: els.dir.value + (els.out.value || els.url.value.split('/').pop()),
+            filename: els.out.value || els.url.value.split('/').pop(),
+            command: cmdText,
+            time: new Date().toLocaleTimeString()
         });
         tx.oncomplete = () => {
-            navigator.clipboard.writeText(els.cmd.textContent);
+            navigator.clipboard.writeText(cmdText);
             render();
-            alert("已复制到剪贴板！");
+            alert("✅ 命令已复制并记录历史");
         };
     };
 
-    // 授权目录
-    document.getElementById('dir-auth').onclick = async () => {
+    // 授权
+    document.getElementById('auth-status').onclick = async () => {
         rootHandle = await window.showDirectoryPicker();
-        document.getElementById('dir-auth').textContent = `✅ 目录已接管`;
+        document.getElementById('auth-status').textContent = `✅ 目录已接管: ${rootHandle.name}`;
     };
 
-    // 渲染列表
+    // 渲染
     const render = () => {
         if (!db) return;
         db.transaction("history", "readonly").objectStore("history").getAll().onsuccess = e => {
-            els.hist.innerHTML = e.target.result.reverse().map(i => `
+            els.list.innerHTML = e.target.result.reverse().map(i => `
                 <li class="hisItem">
-                    <input type="checkbox" class="hisCheck">
-                    <span class="url-val" onclick="navigator.clipboard.writeText('${i.url}')">${i.url}</span>
-                    <span class="path-val" onclick="navigator.clipboard.writeText('${i.path}')">${i.path}</span>
-                    <svg onclick="triggerDel(${i.id}, '${i.filename}')" style="cursor:pointer" viewBox="0 0 16 16" fill="#f85149" width="16"><path d="M11 1.75V3h2.25a.75.75 0 010 1.5H2.75a.75.75 0 010-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75zM4.496 6.675a.75.75 0 10-1.492.15l.66 6.6A1.75 1.75 0 005.405 15h5.19c.9 0 1.652-.681 1.741-1.576l.66-6.6a.75.75 0 00-1.492-.149l-.66 6.6a.25.25 0 01-.249.225h-5.19a.25.25 0 01-.249-.225l-.66-6.6z"></path></svg>
+                    <input type="checkbox" class="task-check">
+                    <span class="url-cell" title="点击复制地址" onclick="navigator.clipboard.writeText('${i.url}')">${i.url}</span>
+                    <span class="path-cell" title="点击复制路径" onclick="navigator.clipboard.writeText('${i.path}')">${i.path}</span>
+                    <div class="del-cell" onclick="askDelete(${i.id}, '${i.filename}')">
+                        <svg viewBox="0 0 16 16" fill="currentColor" width="16"><path d="M11 1.75V3h2.25a.75.75 0 010 1.5H2.75a.75.75 0 010-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75zM4.496 6.675a.75.75 0 10-1.492.15l.66 6.6A1.75 1.75 0 005.405 15h5.19c.9 0 1.652-.681 1.741-1.576l.66-6.6a.75.75 0 00-1.492-.149l-.66 6.6a.25.25 0 01-.249.225h-5.19a.25.25 0 01-.249-.225l-.66-6.6z"></path></svg>
+                    </div>
                 </li>
             `).join('');
         };
     };
 
-    window.triggerDel = (id, file) => {
+    // 磁盘分配切换
+    document.querySelectorAll('.alloc-card').forEach(card => {
+        card.onclick = () => {
+            document.querySelectorAll('.alloc-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            currentAlloc = card.dataset.val;
+            updateCmd();
+        };
+    });
+
+    // 删除逻辑
+    window.askDelete = (id, file) => {
         pendingId = id; pendingFile = file;
-        document.getElementById('del-modal').style.display = 'flex';
+        document.getElementById('modal-del').style.display = 'flex';
     };
+    window.closeModal = () => document.getElementById('modal-del').style.display = 'none';
 
-    window.closeModal = () => document.getElementById('del-modal').style.display = 'none';
-
-    document.getElementById('btn-confirm-del').onclick = async () => {
-        if (document.getElementById('physical-del').checked && rootHandle && pendingFile) {
+    document.getElementById('confirm-del-btn').onclick = async () => {
+        if (document.getElementById('check-physical').checked && rootHandle && pendingFile) {
             try {
                 await rootHandle.removeEntry(pendingFile);
                 await rootHandle.removeEntry(pendingFile + ".aria2");
-            } catch (e) {}
+            } catch (e) { console.warn("物理文件清理失败"); }
         }
         const tx = db.transaction("history", "readwrite");
         tx.objectStore("history").delete(pendingId);
         tx.oncomplete = () => { closeModal(); render(); };
     };
 
-    [els.url, els.out, els.dir, els.split, els.conn, els.alloc].forEach(el => el.oninput = update);
-    openDB(); update();
+    [els.url, els.out, els.dir, els.split, els.conn].forEach(el => el.oninput = updateCmd);
+    updateCmd();
 </script>
 </body>
 </html>
