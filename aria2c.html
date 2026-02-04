@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Aria2c Toolbox</title>
+    <style>
+        body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; }
+        .tabs { display: flex; border-bottom: 1px solid #30363d; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; color: #8b949e; }
+        .tab.active { color: #58a6ff; border-bottom: 2px solid #58a6ff; font-weight: bold; }
+        .panel { display: none; background: #161b22; border: 1px solid #30363d; padding: 20px; border-radius: 8px; }
+        .panel.active { display: block; }
+        input { width: 100%; background: #0d1117; border: 1px solid #30363d; color: white; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        button { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        .cmd-box { background: #000; color: #7ee787; padding: 15px; font-family: monospace; position: relative; }
+    </style>
+</head>
+<body>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab(0)">方案 B (浏览器直下)</div>
+        <div class="tab" onclick="switchTab(1)">方案 C (命令生成)</div>
+    </div>
+
+    <div id="p0" class="panel active">
+        <h3>Web Direct Download</h3>
+        <p style="font-size:12px; color:#8b949e;">注意：大文件直接下载会占用浏览器内存，且无法规避 SSD 碎写。</p>
+        <input type="text" id="b-url" placeholder="粘贴下载链接">
+        <button onclick="doDownload()">立即下载</button>
+    </div>
+
+    <div id="p1" class="panel">
+        <h3>Command Generator</h3>
+        <input type="text" id="c-url" oninput="genCmd()" placeholder="粘贴下载链接">
+        <div class="cmd-box" id="cmd-out">aria2c -c -x16 -s16 ...</div>
+        <button style="margin-top:10px; background:#30363d;" onclick="copyCmd()">复制命令</button>
+    </div>
+
+    <script>
+        function switchTab(idx) {
+            document.querySelectorAll('.tab, .panel').forEach((el, i) => {
+                el.classList.toggle('active', (i % 2) === idx);
+            });
+        }
+
+        // 方案 B 逻辑
+        function doDownload() {
+            const url = document.getElementById('b-url').value;
+            if(!url) return;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = url.split('/').pop() || 'file';
+            a.click();
+            // 此处可添加写入 IndexedDB 的逻辑，与 MJS 版本共享库名
+        }
+
+        // 方案 C 逻辑
+        function genCmd() {
+            const url = document.getElementById('c-url').value;
+            const cmd = `aria2c -c -x16 -s16 --file-allocation=none "${url}"`;
+            document.getElementById('cmd-out').innerText = cmd;
+        }
+
+        function copyCmd() {
+            navigator.clipboard.writeText(document.getElementById('cmd-out').innerText);
+            alert('命令已复制');
+        }
+    </script>
+</body>
+</html>
